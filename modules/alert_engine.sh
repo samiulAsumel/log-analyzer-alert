@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# modules/alert_engine.sh — Alert Engine  v1.0.0
+# modules/alert_engine.sh — Alert Engine  v2.0.0
 # Sourced by log_analyzer.sh.
 # Provides: _send_critical_alert  _send_high_alert  _send_alert
-# Handles email (sendmail/mailx), Slack webhooks, rate-limiting.
+# Channels: email (sendmail/mailx), Slack, Microsoft Teams, PagerDuty
 # set -euo pipefail is inherited from the orchestrator.
 
 # ── Rate-limit helper ─────────────────────────────────────────────────────────
@@ -66,7 +66,7 @@ _build_email_html() {
 <body>
 <div class="wrap">
   <div class="hdr">
-    <h1>🔔 ${subject}</h1>
+    <h1>&#128276; ${subject}</h1>
     <p>Host: $(hostname -f 2>/dev/null || echo unknown) &nbsp;|&nbsp; $(date '+%Y-%m-%d %H:%M:%S %Z')</p>
   </div>
   <div class="body">
@@ -89,7 +89,7 @@ ROW
     cat <<HTML
     </table>
     <p style="font-size:12px;color:#777;margin-top:20px;">
-      Log Analyzer &amp; Alert System v${VERSION:-1.0.0} — findings stored in ${FINDINGS_DIR:-/var/lib/loganalyzer/findings}
+      Log Analyzer &amp; Alert System v${VERSION:-2.0.0} — findings stored in ${FINDINGS_DIR:-/var/lib/loganalyzer/findings}
     </p>
   </div>
   <div class="footer">This is an automated alert. Do not reply to this message.</div>
@@ -125,8 +125,107 @@ _build_slack_payload() {
         "$colour" \
         "$(echo -n "$text" | sed 's/"/\\"/g')" \
         "$(echo -n "$fields" | sed 's/"/\\"/g')" \
-        "${VERSION:-1.0.0}" \
+        "${VERSION:-2.0.0}" \
         "$(date +%s)"
+}
+
+# ── Microsoft Teams message builder ──────────────────────────────────────────
+_build_teams_payload() {
+    local subject="$1" severity="$2"
+    shift 2
+    local findings=("$@")
+
+    local colour
+    case "${severity^^}" in
+        CRITICAL) colour="FF0000" ;;
+        HIGH)     colour="FF6600" ;;
+        MEDIUM)   colour="FFCC00" ;;
+        *)        colour="0073CF" ;;
+    esac
+
+    local facts=""
+    local i=0
+    for f in "${findings[@]:0:8}"; do
+        IFS='|' read -r sev mod title detail <<< "$f"
+        [[ $i -gt 0 ]] && facts+=","
+        facts+="{\"name\":\"[${sev^^}] ${mod}\",\"value\":\"${title}\"}"
+        (( i++ ))
+    done
+
+    local host; host=$(hostname -f 2>/dev/null || echo unknown)
+    local ts; ts=$(date '+%Y-%m-%d %H:%M:%S %Z')
+
+    printf '{"@type":"MessageCard","@context":"https://schema.org/extensions","themeColor":"%s","summary":"%s","sections":[{"activityTitle":"**%s**","activitySubtitle":"Host: %s | %s","facts":[%s]}]}' \
+        "$colour" \
+        "$(echo -n "$subject" | sed 's/"/\\"/g')" \
+        "$(echo -n "$subject" | sed 's/"/\\"/g')" \
+        "$host" "$ts" "$facts"
+}
+
+# ── PagerDuty event builder ───────────────────────────────────────────────────
+_send_pagerduty() {
+    local severity="$1" subject="$2"
+    shift 2
+    local findings=("$@")
+
+    [[ -z "${PAGERDUTY_KEY:-}" ]] && {
+        log "WARN" "ALERT" "PAGERDUTY_KEY not set — skipping PagerDuty"
+        return 0
+    }
+    command -v curl &>/dev/null || {
+        log "WARN" "ALERT" "curl not found — PagerDuty alert skipped"
+        return 0
+    }
+
+    # Map severity to PagerDuty severity
+    local pd_severity
+    case "${severity^^}" in
+        CRITICAL) pd_severity="critical" ;;
+        HIGH)     pd_severity="error"    ;;
+        MEDIUM)   pd_severity="warning"  ;;
+        *)        pd_severity="info"     ;;
+    esac
+
+    local dedup_key; dedup_key="loganalyzer_${severity^^}_$(hostname -s)_$(date '+%Y%m%d_%H')"
+    local host; host=$(hostname -f 2>/dev/null || echo unknown)
+
+    # Build custom_details from top findings
+    local details=""
+    local i=0
+    for f in "${findings[@]:0:10}"; do
+        IFS='|' read -r sev mod title detail <<< "$f"
+        [[ $i -gt 0 ]] && details+=","
+        details+="\"finding_$((i+1))\":\"[${sev}] ${mod}: ${title}\""
+        (( i++ ))
+    done
+
+    local payload
+    payload=$(printf '{
+  "routing_key": "%s",
+  "event_action": "trigger",
+  "dedup_key": "%s",
+  "payload": {
+    "summary": "%s",
+    "severity": "%s",
+    "source": "%s",
+    "timestamp": "%s",
+    "custom_details": { %s }
+  }
+}' \
+        "${PAGERDUTY_KEY}" \
+        "$dedup_key" \
+        "$(echo -n "$subject" | sed 's/"/\\"/g')" \
+        "$pd_severity" \
+        "$host" \
+        "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+        "$details")
+
+    curl -s -X POST \
+        -H "Content-Type: application/json" \
+        --data "$payload" \
+        "https://events.pagerduty.com/v2/enqueue" &>/dev/null \
+    && log "OK" "ALERT" "PagerDuty event triggered (severity: ${pd_severity})" \
+    || log "WARN" "ALERT" "PagerDuty API call failed"
 }
 
 # ── Core send function ────────────────────────────────────────────────────────
@@ -144,7 +243,7 @@ _send_alert() {
     local method="${ALERT_METHOD:-email}"
 
     # ── Email ──────────────────────────────────────────────────────────────
-    if [[ "$method" == "email" || "$method" == "both" ]]; then
+    if [[ "$method" == "email" || "$method" == "both" || "$method" == *"email"* ]]; then
         if [[ -z "${ALERT_EMAIL:-}" ]]; then
             log "WARN" "ALERT" "ALERT_EMAIL not set — skipping email"
         else
@@ -152,7 +251,6 @@ _send_alert() {
             html=$(_build_email_html "$subject" "$severity" "${findings[@]}")
             local full_subject="[LogAlert][${severity^^}] ${subject} @ $(hostname -s)"
 
-            # Try mailx, then sendmail, then mutt
             if command -v mailx &>/dev/null; then
                 echo "$html" | mailx -a "Content-Type: text/html" \
                     -s "$full_subject" \
@@ -180,7 +278,7 @@ _send_alert() {
     fi
 
     # ── Slack ──────────────────────────────────────────────────────────────
-    if [[ "$method" == "slack" || "$method" == "both" ]]; then
+    if [[ "$method" == "slack" || "$method" == "both" || "$method" == *"slack"* ]]; then
         if [[ -z "${SLACK_WEBHOOK:-}" ]]; then
             log "WARN" "ALERT" "SLACK_WEBHOOK not set — skipping Slack"
         elif command -v curl &>/dev/null; then
@@ -195,6 +293,31 @@ _send_alert() {
             log "WARN" "ALERT" "curl not found — Slack alert skipped"
         fi
     fi
+
+    # ── Microsoft Teams ────────────────────────────────────────────────────
+    if [[ "$method" == "teams" || "$method" == *"teams"* ]]; then
+        if [[ -z "${TEAMS_WEBHOOK:-}" ]]; then
+            log "WARN" "ALERT" "TEAMS_WEBHOOK not set — skipping Teams"
+        elif command -v curl &>/dev/null; then
+            local payload
+            payload=$(_build_teams_payload "$subject" "$severity" "${findings[@]}")
+            curl -s -X POST -H 'Content-Type: application/json' \
+                --data "$payload" \
+                "$TEAMS_WEBHOOK" &>/dev/null \
+            && log "OK" "ALERT" "Teams message sent" \
+            || log "WARN" "ALERT" "Teams webhook call failed"
+        else
+            log "WARN" "ALERT" "curl not found — Teams alert skipped"
+        fi
+    fi
+
+    # ── PagerDuty (CRITICAL and HIGH only, always attempted if key is set) ──
+    if [[ -n "${PAGERDUTY_KEY:-}" ]]; then
+        case "${severity^^}" in
+            CRITICAL|HIGH)
+                _send_pagerduty "$severity" "$subject" "${findings[@]}" ;;
+        esac
+    fi
 }
 
 # ── Public helpers called by orchestrator ────────────────────────────────────
@@ -206,9 +329,8 @@ _send_critical_alert() {
     done
     [[ ${#critical_findings[@]} -eq 0 ]] && return 0
 
-    local key="CRITICAL_$(date '+%Y%m%d_%H')"   # one per hour, always fires
     # CRITICAL always bypasses rate-limit
-    local subject="CRITICAL: ${CRITICAL_COUNT} critical issue(s) detected"
+    local subject="CRITICAL: ${CRITICAL_COUNT} critical issue(s) detected on $(hostname -s)"
     _send_alert "CRITICAL" "$subject" "${critical_findings[@]}"
     log "OK" "ALERT" "CRITICAL alert dispatched (${CRITICAL_COUNT} finding(s))"
 }
@@ -223,7 +345,7 @@ _send_high_alert() {
     local key="HIGH_$(date '+%Y%m%d')"
     _alert_allowed "$key" "${HIGH_ALERT_COOLDOWN:-30}" || return 0
 
-    local subject="HIGH: ${HIGH_COUNT} high-severity issue(s) detected"
+    local subject="HIGH: ${HIGH_COUNT} high-severity issue(s) detected on $(hostname -s)"
     _send_alert "HIGH" "$subject" "${high_findings[@]}"
     log "OK" "ALERT" "HIGH alert dispatched (${HIGH_COUNT} finding(s))"
 }

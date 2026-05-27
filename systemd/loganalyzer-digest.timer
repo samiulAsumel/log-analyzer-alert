@@ -1,0 +1,12 @@
+[Unit]
+Description=Log Analyzer — Daily Digest at 07:00
+Documentation=https://github.com/samiulAsumel/log-analyzer-alert
+Requires=loganalyzer-digest.service
+
+[Timer]
+OnCalendar=*-*-* 07:00:00
+Persistent=true
+Unit=loganalyzer-digest.service
+
+[Install]
+WantedBy=timers.target

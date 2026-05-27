@@ -1,0 +1,21 @@
+[Unit]
+Description=Log Analyzer — Daily HTML Digest Report
+Documentation=https://github.com/samiulAsumel/log-analyzer-alert
+After=network.target
+ConditionPathExists=/usr/local/bin/loganalyzer/reports/generate_digest.sh
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/local/bin/loganalyzer/reports/generate_digest.sh
+StandardOutput=append:/var/log/loganalyzer/digest.log
+StandardError=append:/var/log/loganalyzer/digest.log
+
+PrivateTmp=true
+NoNewPrivileges=false
+CPUQuota=10%
+MemoryMax=128M
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target

@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# log_analyzer.sh — Automated Log Analyzer & Alert System  Orchestrator v1.0.0
-# Runs every 15 min via cron. Reads only NEW log lines since last run.
+# log_analyzer.sh — Automated Log Analyzer & Alert System  Orchestrator v2.0.0
+# Runs every 15 min via cron/systemd timer. Reads only NEW log lines since last run.
 # Calls all analysis modules, aggregates findings, fires alerts.
-# Usage: ./log_analyzer.sh [--dry-run] [--verbose] [--force] [--module=NAME]
+# Usage: ./log_analyzer.sh [--dry-run] [--verbose] [--force] [--module=NAME] [--json]
 # Cron:  */15 * * * * /usr/local/bin/loganalyzer/log_analyzer.sh
+# Timer: systemctl enable --now loganalyzer.timer
 set -euo pipefail
 trap '_on_error $LINENO "$BASH_COMMAND"' ERR
 
@@ -36,8 +37,15 @@ for _mod in alert_engine analyze_auth analyze_system analyze_nginx \
     source "$_path"
 done
 
+# Optional modules sourced only if present
+for _opt_mod in analyze_journal; do
+    _opt_path="${SCRIPT_DIR}/modules/${_opt_mod}.sh"
+    # shellcheck disable=SC1090
+    [[ -f "$_opt_path" ]] && source "$_opt_path"
+done
+
 # ── Runtime flags ─────────────────────────────────────────────────────────────
-DRY_RUN=false; VERBOSE=false; FORCE=false; ONLY_MODULE=""
+DRY_RUN=false; VERBOSE=false; FORCE=false; ONLY_MODULE=""; JSON_OUTPUT=false
 
 for _arg in "$@"; do
     case "$_arg" in
@@ -45,6 +53,7 @@ for _arg in "$@"; do
         --verbose)       VERBOSE=true       ;;
         --force)         FORCE=true         ;;
         --module=*)      ONLY_MODULE="${_arg#*=}" ;;
+        --json)          JSON_OUTPUT=true   ;;
     esac
 done
 
@@ -62,6 +71,11 @@ fi
 $DRY_RUN || {
     mkdir -p "$LOG_DIR" "$STATE_DIR" "$POSITION_DIR" "$FINDINGS_DIR" "$COOLDOWN_DIR"
     chmod 750 "$STATE_DIR" "$POSITION_DIR" "$FINDINGS_DIR" "$COOLDOWN_DIR"
+    # JSON export dir (if enabled)
+    if [[ "${JSON_EXPORT_ENABLED:-false}" == "true" ]]; then
+        mkdir -p "${JSON_EXPORT_DIR:-${STATE_DIR}/findings_json}"
+        chmod 750 "${JSON_EXPORT_DIR:-${STATE_DIR}/findings_json}"
+    fi
 }
 
 # ── Logging ───────────────────────────────────────────────────────────────────
@@ -223,8 +237,8 @@ if [[ -t 1 ]] || $VERBOSE; then
     echo -e "${BOLD}${AMBER}"
     cat <<'BANNER'
 ╔══════════════════════════════════════════════════════════════════╗
-║    Automated Log Analyzer & Alert System  —  Run v1.0.0         ║
-║    RHEL 9 / Rocky Linux / Ubuntu Server                         ║
+║    Automated Log Analyzer & Alert System  —  Run v2.0.0         ║
+║    RHEL 9 / Rocky Linux / Ubuntu Server / systemd               ║
 ╚══════════════════════════════════════════════════════════════════╝
 BANNER
     echo -e "${RESET}"
@@ -263,6 +277,7 @@ run_module "system"  "module_analyze_system"
 run_module "nginx"   "module_analyze_nginx"
 run_module "mysql"   "module_analyze_mysql"
 run_module "app"     "module_analyze_app"
+run_module "journal" "module_analyze_journal"
 run_module "threats" "module_detect_threats"
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -270,6 +285,26 @@ run_module "threats" "module_detect_threats"
 # ════════════════════════════════════════════════════════════════════════════
 
 log "INFO" "ORCHESTRATOR" "Findings this run — CRITICAL:${CRITICAL_COUNT} HIGH:${HIGH_COUNT} MEDIUM:${MEDIUM_COUNT} LOW:${LOW_COUNT}"
+
+# ── JSON export (SIEM integration) ───────────────────────────────────────────
+if [[ "${JSON_EXPORT_ENABLED:-false}" == "true" ]] && ! $DRY_RUN && [[ ${#ALL_FINDINGS[@]} -gt 0 ]]; then
+    _json_out="${JSON_EXPORT_DIR:-${STATE_DIR}/findings_json}/${RUN_ID}.json"
+    {
+        printf '{"run_id":"%s","host":"%s","timestamp":"%s","version":"%s","counts":{"critical":%d,"high":%d,"medium":%d,"low":%d},"findings":[' \
+            "$RUN_ID" "$HOSTNAME_DISPLAY" "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "${VERSION:-2.0.0}" \
+            "$CRITICAL_COUNT" "$HIGH_COUNT" "$MEDIUM_COUNT" "$LOW_COUNT"
+        _sep=""
+        for _f in "${ALL_FINDINGS[@]}"; do
+            IFS='|' read -r _s _m _t _d <<< "$_f"
+            _esc() { echo -n "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'; }
+            printf '%s{"severity":"%s","module":"%s","title":"%s","detail":"%s"}' \
+                "$_sep" "$(_esc "${_s^^}")" "$(_esc "$_m")" "$(_esc "$_t")" "$(_esc "$_d")"
+            _sep=","
+        done
+        printf ']}\n'
+    } > "$_json_out"
+    log "OK" "ORCHESTRATOR" "JSON findings exported → ${_json_out}"
+fi
 
 if (( CRITICAL_COUNT > 0 )); then
     _send_critical_alert

@@ -1,0 +1,26 @@
+[Unit]
+Description=Automated Log Analyzer & Alert System
+Documentation=https://github.com/samiulAsumel/log-analyzer-alert
+After=network.target syslog.target
+ConditionPathExists=/usr/local/bin/loganalyzer/log_analyzer.sh
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/local/bin/loganalyzer/log_analyzer.sh
+StandardOutput=append:/var/log/loganalyzer/analyzer.log
+StandardError=append:/var/log/loganalyzer/analyzer.log
+
+# Security hardening
+PrivateTmp=true
+NoNewPrivileges=false
+ProtectSystem=false
+ReadWritePaths=/var/log /var/lib/loganalyzer
+
+# Resource limits — prevent runaway analysis from starving the system
+CPUQuota=25%
+MemoryMax=256M
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

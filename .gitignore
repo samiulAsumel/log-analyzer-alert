@@ -1,0 +1,27 @@
+# Runtime artifacts — never commit these
+*.findings
+*.lock
+*.bak.*
+*.bak
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Editor directories
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Temp files generated during testing
+/tmp/la_*
+
+# Sensitive configs (use config.conf.example instead)
+config.local.conf
+secrets.conf
+
+# Compiled/minified assets (if any build step is added)
+dist/
+build/
