@@ -399,7 +399,7 @@ code, pre, .mono { font-family: var(--font-mono); }
 }
 .scripts-search:focus { border-color: var(--amber-dim); }
 .scripts-search::placeholder { color: var(--text-muted); }
-.script-nav-list { padding: 8px 0; overflow-y: auto; max-height: 420px; }
+.script-nav-list { padding: 8px 0; }
 .script-nav-btn {
   width: 100%; display: flex; align-items: center; gap: 8px;
   padding: 9px 14px; font-size: 12px; font-weight: 500;
