@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Automated Log Analyzer & Alert System — production-grade bash log analysis with Email, Slack, Teams, and PagerDuty alerts for RHEL 9, Rocky Linux, and Ubuntu Server.">
+  <title>Log Analyzer & Alert System — v2.0.0</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="progress-bar" role="progressbar" aria-label="Page scroll progress"></div>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+
+  <!-- ═══════════════════════ HEADER ═══════════════════════ -->
+  <header id="site-header" role="banner">
+    <div class="header-brand">
+      <svg class="brand-icon" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <path d="M16 4 L27 8.5 L27 17.5C27 22.8 21.8 27.5 16 29C10.2 27.5 5 22.8 5 17.5L5 8.5Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+        <circle cx="16" cy="17" r="4.5" fill="currentColor" opacity="0.9"/>
+        <circle cx="16" cy="17" r="2" fill="#050408"/>
+        <line x1="9" y1="12" x2="23" y2="12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.45"/>
+        <line x1="9" y1="15" x2="13" y2="15" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.45"/>
+        <line x1="19" y1="15" x2="23" y2="15" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.45"/>
+      </svg>
+      <span class="brand-text">LOG<span class="brand-sep">·</span>ANALYZER</span>
+    </div>
+
+    <nav class="header-nav" aria-label="Main navigation">
+      <a class="nav-link active" href="#hero">Home</a>
+      <a class="nav-link" href="#architecture">Architecture</a>
+      <a class="nav-link" href="#scripts">Scripts</a>
+      <a class="nav-link" href="#detections">Detections</a>
+      <a class="nav-link" href="#alerts">Alerts</a>
+      <a class="nav-link" href="#threats">Threats</a>
+      <a class="nav-link" href="#playground">Playground</a>
+    </nav>
+
+    <div class="header-right">
+      <div class="header-status">
+        <span class="status-dot status-amber" aria-label="Monitoring active"></span>
+        <span class="status-label">MONITORING</span>
+      </div>
+      <a class="gh-btn" href="https://github.com/samiulAsumel/log-analyzer-alert" target="_blank" rel="noopener" aria-label="View on GitHub">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.5.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0112 6.8c.85 0 1.71.11 2.51.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0022 12c0-5.52-4.48-10-10-10z"/></svg>
+        GitHub
+      </a>
+    </div>
+
+    <button class="hamburger" aria-expanded="false" aria-controls="mobile-nav" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+  </header>
+
+  <nav id="mobile-nav" class="mobile-nav-overlay" aria-label="Mobile navigation">
+    <a class="mnav-link" href="#hero">Home</a>
+    <a class="mnav-link" href="#architecture">Architecture</a>
+    <a class="mnav-link" href="#scripts">Scripts</a>
+    <a class="mnav-link" href="#detections">Detections</a>
+    <a class="mnav-link" href="#alerts">Alerts</a>
+    <a class="mnav-link" href="#threats">Threats</a>
+    <a class="mnav-link" href="#playground">Playground</a>
+  </nav>
+
+  <!-- ═══════════════════════ MAIN ═══════════════════════ -->
+  <main id="main-content">
+
+    <!-- ── HERO ────────────────────────────────────────────── -->
+    <section id="hero" aria-label="Hero">
+      <div class="hero-left">
+        <div class="hero-eyebrow">
+          <span class="hero-eyebrow-dot" aria-hidden="true"></span>
+          Production-Grade · Zero Dependencies · Pure Bash
+        </div>
+        <h1 class="hero-title">
+          Log Analysis<br>
+          <span class="hero-title-line2">&amp; Instant Alerts</span>
+        </h1>
+        <p class="hero-desc">
+          Monitors syslog, auth, nginx, MySQL, application logs, and the systemd journal every 15 minutes.
+          Fires Email, Slack, Teams, and PagerDuty alerts on CRITICAL findings.
+          Sends a daily HTML digest at 07:00.
+        </p>
+        <div class="hero-ctas">
+          <a class="cta-primary" href="https://github.com/samiulAsumel/log-analyzer-alert" target="_blank" rel="noopener">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.5.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0112 6.8c.85 0 1.71.11 2.51.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0022 12c0-5.52-4.48-10-10-10z"/></svg>
+            View on GitHub
+          </a>
+          <a class="cta-secondary" href="#scripts">Browse Scripts</a>
+        </div>
+        <div class="hero-badges">
+          <span class="hero-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>63 tests passing</span>
+          <span class="hero-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>RHEL 9 / Rocky / Ubuntu</span>
+          <span class="hero-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>systemd + cron</span>
+          <span class="hero-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>SIEM JSON export</span>
+        </div>
+      </div>
+
+      <div class="hero-right">
+        <div class="hero-terminal" role="region" aria-label="Live terminal output">
+          <div class="term-titlebar">
+            <div class="term-dots" aria-hidden="true">
+              <span class="term-dot term-dot-r"></span>
+              <span class="term-dot term-dot-y"></span>
+              <span class="term-dot term-dot-g"></span>
+            </div>
+            <span class="term-title">log_analyzer.sh — Run 20260528_140000</span>
+          </div>
+          <div class="term-body" id="hero-terminal" aria-live="polite" aria-label="Terminal output"></div>
+        </div>
+
+        <div class="hero-vault-stats">
+          <div class="vault-stat">
+            <div class="vault-stat-val">8</div>
+            <div class="vault-stat-label">Modules</div>
+          </div>
+          <div class="vault-stat">
+            <div class="vault-stat-val">4</div>
+            <div class="vault-stat-label">Alert Channels</div>
+          </div>
+          <div class="vault-stat">
+            <div class="vault-stat-val">63</div>
+            <div class="vault-stat-label">Tests</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── STATS BAR ───────────────────────────────────────── -->
+    <div id="stats-bar" role="complementary" aria-label="Key metrics">
+      <div class="stats-bar-inner">
+        <div class="stat-item"><div class="stat-num">15</div><div class="stat-label">Min interval</div></div>
+        <div class="stat-item"><div class="stat-num">8</div><div class="stat-label">Log modules</div></div>
+        <div class="stat-item"><div class="stat-num">4</div><div class="stat-label">Alert channels</div></div>
+        <div class="stat-item"><div class="stat-num">63</div><div class="stat-label">Tests passing</div></div>
+        <div class="stat-item"><div class="stat-num">0</div><div class="stat-label">Dependencies</div></div>
+        <div class="stat-item"><div class="stat-num">v2</div><div class="stat-label">Current version</div></div>
+      </div>
+    </div>
+
+    <!-- ── QUICK INSTALL ───────────────────────────────────── -->
+    <section class="section" id="install" aria-labelledby="install-heading">
+      <div class="section-inner">
+        <div class="section-label">Get started</div>
+        <h2 class="section-heading" id="install-heading">One-command install</h2>
+        <p class="section-sub">Auto-detects systemd and installs timers. Falls back to cron on older systems.</p>
+
+        <div style="display:flex;flex-direction:column;gap:12px;max-width:680px;">
+          <div class="install-row pre-reveal">
+            <span class="install-label">Clone</span>
+            <div class="install-cmd">
+              <code>git clone https://github.com/samiulAsumel/log-analyzer-alert.git</code>
+              <button class="copy-btn" data-copy="git clone https://github.com/samiulAsumel/log-analyzer-alert.git" aria-label="Copy clone command">COPY</button>
+            </div>
+          </div>
+          <div class="install-row pre-reveal">
+            <span class="install-label">Configure</span>
+            <div class="install-cmd">
+              <code>nano config.conf  # set ALERT_EMAIL, SLACK_WEBHOOK, PAGERDUTY_KEY</code>
+              <button class="copy-btn" data-copy="nano config.conf" aria-label="Copy configure command">COPY</button>
+            </div>
+          </div>
+          <div class="install-row pre-reveal">
+            <span class="install-label">Install</span>
+            <div class="install-cmd">
+              <code>sudo bash install.sh</code>
+              <button class="copy-btn" data-copy="sudo bash install.sh" aria-label="Copy install command">COPY</button>
+            </div>
+          </div>
+          <div class="install-row pre-reveal">
+            <span class="install-label">Verify</span>
+            <div class="install-cmd">
+              <code>bash /usr/local/bin/loganalyzer/scripts/health_check.sh</code>
+              <button class="copy-btn" data-copy="bash /usr/local/bin/loganalyzer/scripts/health_check.sh" aria-label="Copy verify command">COPY</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── ARCHITECTURE ────────────────────────────────────── -->
+    <section class="section" id="architecture" aria-labelledby="arch-heading">
+      <div class="section-inner">
+        <div class="section-label">How it works</div>
+        <h2 class="section-heading" id="arch-heading">Pipeline architecture</h2>
+        <p class="section-sub">Every 15 minutes, the orchestrator reads only <em>new bytes</em> from each log file using inode+offset tracking — no full re-reads, no duplicate alerts.</p>
+
+        <div class="pipeline-track pre-reveal" role="list" aria-label="Analysis pipeline steps">
+          <div class="pipeline-track-fill" id="pipeline-fill" aria-hidden="true"></div>
+          <div class="pipeline-step" role="listitem">
+            <div class="pipeline-node" id="pnode-0">01</div>
+            <span class="pipeline-label">Lock &amp; Init</span>
+          </div>
+          <div class="pipeline-step" role="listitem">
+            <div class="pipeline-node" id="pnode-1">02</div>
+            <span class="pipeline-label">Position<br>Track</span>
+          </div>
+          <div class="pipeline-step" role="listitem">
+            <div class="pipeline-node" id="pnode-2">03</div>
+            <span class="pipeline-label">Auth<br>Module</span>
+          </div>
+          <div class="pipeline-step" role="listitem">
+            <div class="pipeline-node" id="pnode-3">04</div>
+            <span class="pipeline-label">System<br>Module</span>
+          </div>
+          <div class="pipeline-step" role="listitem">
+            <div class="pipeline-node" id="pnode-4">05</div>
+            <span class="pipeline-label">Nginx<br>Module</span>
+          </div>
+          <div class="pipeline-step" role="listitem">
+            <div class="pipeline-node" id="pnode-5">06</div>
+            <span class="pipeline-label">MySQL<br>Module</span>
+          </div>
+          <div class="pipeline-step" role="listitem">
+            <div class="pipeline-node" id="pnode-6">07</div>
+            <span class="pipeline-label">App<br>Module</span>
+          </div>
+          <div class="pipeline-step" role="listitem">
+            <div class="pipeline-node" id="pnode-7">08</div>
+            <span class="pipeline-label">Journal<br>Module</span>
+          </div>
+          <div class="pipeline-step" role="listitem">
+            <div class="pipeline-node" id="pnode-8">09</div>
+            <span class="pipeline-label">Threat<br>Engine</span>
+          </div>
+          <div class="pipeline-step" role="listitem">
+            <div class="pipeline-node" id="pnode-9">10</div>
+            <span class="pipeline-label">Alert<br>Dispatch</span>
+          </div>
+        </div>
+
+        <div class="arch-pipeline" style="margin-top:32px;">
+          <div class="arch-step pre-reveal">
+            <div class="arch-step-num">01–02</div>
+            <div class="arch-step-name">Lock + Position</div>
+            <div class="arch-step-desc">Acquire PID lock, determine new bytes per log file via inode+offset.</div>
+          </div>
+          <div class="arch-step pre-reveal">
+            <div class="arch-step-num">03–08</div>
+            <div class="arch-step-name">Analysis Modules</div>
+            <div class="arch-step-desc">Auth, System, Nginx, MySQL, App, Journal — each reads only its own log's new bytes.</div>
+          </div>
+          <div class="arch-step pre-reveal">
+            <div class="arch-step-num">09</div>
+            <div class="arch-step-name">Threat Engine</div>
+            <div class="arch-step-desc">Cross-correlates all module findings to detect coordinated attacks and cascades.</div>
+          </div>
+          <div class="arch-step pre-reveal">
+            <div class="arch-step-num">10</div>
+            <div class="arch-step-name">Alert Dispatch</div>
+            <div class="arch-step-desc">CRITICAL → immediate multi-channel alert. HIGH → rate-limited. MEDIUM/LOW → daily digest.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SCRIPTS EXPLORER ────────────────────────────────── -->
+    <section class="section" id="scripts" aria-labelledby="scripts-heading">
+      <div class="section-inner">
+        <div class="section-label">Source code</div>
+        <h2 class="section-heading" id="scripts-heading">Script explorer</h2>
+        <p class="section-sub">Browse every file in the repository. All scripts are pure Bash with zero external dependencies beyond standard Linux coreutils.</p>
+
+        <div class="scripts-layout pre-reveal">
+          <aside class="scripts-sidebar">
+            <div class="scripts-search-wrap">
+              <input class="scripts-search" id="scripts-search" type="search" placeholder="Search scripts…" aria-label="Search scripts">
+            </div>
+            <ul class="script-nav-list" id="script-nav-list" role="listbox" aria-label="Script files">
+            </ul>
+          </aside>
+          <div class="scripts-content" id="scripts-content" role="region" aria-live="polite" aria-label="Script viewer">
+            <p style="color:var(--text-muted);font-size:13px;">Select a script from the sidebar.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── DETECTIONS ──────────────────────────────────────── -->
+    <section class="section" id="detections" aria-labelledby="det-heading">
+      <div class="section-inner">
+        <div class="section-label">What it catches</div>
+        <h2 class="section-heading" id="det-heading">Detection coverage</h2>
+        <p class="section-sub">Each module is independently testable. Run <code style="font-family:var(--font-mono);color:var(--amber);font-size:13px;">--module=auth</code> to execute a single one.</p>
+
+        <div class="det-tabs" role="tablist" aria-label="Detection module tabs">
+          <button class="det-tab active" role="tab" aria-selected="true" aria-controls="det-auth" data-panel="det-auth">🔐 AUTH</button>
+          <button class="det-tab" role="tab" aria-selected="false" aria-controls="det-system" data-panel="det-system">⚙️ SYSTEM</button>
+          <button class="det-tab" role="tab" aria-selected="false" aria-controls="det-nginx" data-panel="det-nginx">🌐 NGINX</button>
+          <button class="det-tab" role="tab" aria-selected="false" aria-controls="det-mysql" data-panel="det-mysql">🗃️ MYSQL</button>
+          <button class="det-tab" role="tab" aria-selected="false" aria-controls="det-app" data-panel="det-app">📦 APP</button>
+          <button class="det-tab" role="tab" aria-selected="false" aria-controls="det-journal" data-panel="det-journal">📋 JOURNAL</button>
+        </div>
+
+        <div class="det-panel active" id="det-auth" role="tabpanel">
+          <div class="det-grid">
+            <div class="det-card"><span class="det-card-sev sev-critical">CRITICAL</span><div class="det-card-title">Brute-force SSH</div><div class="det-card-desc">≥5 failed logins from a single IP in 15 min. Optional firewalld auto-block.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-critical">CRITICAL</span><div class="det-card-title">Root SSH Login</div><div class="det-card-desc">Successful authenticated login as root from any IP.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-high">HIGH</span><div class="det-card-title">Repeated SSH Failures</div><div class="det-card-desc">3–4 failed attempts from a single IP — below brute-force threshold.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-high">HIGH</span><div class="det-card-title">Root Brute-force</div><div class="det-card-desc">Any failed password attempts against the root account.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-high">HIGH</span><div class="det-card-title">Invalid User Attempts</div><div class="det-card-desc">Login attempts for usernames that don't exist on the system.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-medium">MEDIUM</span><div class="det-card-title">New User Created</div><div class="det-card-desc">useradd/new user entry detected — flag for review.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-medium">MEDIUM</span><div class="det-card-title">Sudo Auth Failures</div><div class="det-card-desc">Failed sudo authentication attempts from any user.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-low">LOW</span><div class="det-card-title">Sudo Escalations</div><div class="det-card-desc">Successful sudo COMMAND= events — logged for audit trail.</div></div>
+          </div>
+        </div>
+
+        <div class="det-panel" id="det-system" role="tabpanel">
+          <div class="det-grid">
+            <div class="det-card"><span class="det-card-sev sev-critical">CRITICAL</span><div class="det-card-title">OOM Kill</div><div class="det-card-desc">Out-of-Memory kill events — kernel killed a process due to memory pressure.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-critical">CRITICAL</span><div class="det-card-title">Kernel Panic</div><div class="det-card-desc">Kernel panic / Oops events — system may require hard restart.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-critical">CRITICAL</span><div class="det-card-title">Hardware Errors</div><div class="det-card-desc">Disk I/O errors, MCE events, EDAC/ECC memory corrections.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-critical">CRITICAL</span><div class="det-card-title">Disk Full</div><div class="det-card-desc">ENOSPC / No space left on device — write operations failing.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-critical">CRITICAL</span><div class="det-card-title">RAID Degraded</div><div class="det-card-desc">MD array degraded — check /proc/mdstat immediately.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-high">HIGH</span><div class="det-card-title">Segfaults</div><div class="det-card-desc">Segmentation fault events — process crashes with signal 11.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-high">HIGH</span><div class="det-card-title">Service Failures</div><div class="det-card-desc">systemd unit entered failed state or start-limit-hit.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-high">HIGH</span><div class="det-card-title">Thermal Throttling</div><div class="det-card-desc">CPU thermal throttle events — cooling system may be failing.</div></div>
+          </div>
+        </div>
+
+        <div class="det-panel" id="det-nginx" role="tabpanel">
+          <div class="det-grid">
+            <div class="det-card"><span class="det-card-sev sev-critical">CRITICAL</span><div class="det-card-title">5xx Error Spike</div><div class="det-card-desc">≥20 server errors in 15 min — application likely down or crashing.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-high">HIGH</span><div class="det-card-title">404 Storm</div><div class="det-card-desc">≥50 404s from a single IP — directory scan or broken crawler.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-high">HIGH</span><div class="det-card-title">DDoS / Flood</div><div class="det-card-desc">Single IP generates &gt;33% of all traffic in the interval.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-high">HIGH</span><div class="det-card-title">Scanner User-Agent</div><div class="det-card-desc">sqlmap, nikto, nmap, DirBuster, Hydra, Burp Suite detected.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-high">HIGH</span><div class="det-card-title">Upstream Failures</div><div class="det-card-desc">Backend proxy targets failing — app server or PHP-FPM down.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-high">HIGH</span><div class="det-card-title">Nginx Crit/Emerg</div><div class="det-card-desc">[crit], [alert], or [emerg] level nginx error log entries.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-medium">MEDIUM</span><div class="det-card-title">Slow Requests</div><div class="det-card-desc">Requests exceeding MAX_RESPONSE_MS (default: 5000ms).</div></div>
+            <div class="det-card"><span class="det-card-sev sev-medium">MEDIUM</span><div class="det-card-title">POST Flood</div><div class="det-card-desc">Unusually high POST volume (&gt;50% of traffic, &gt;200 requests).</div></div>
+          </div>
+        </div>
+
+        <div class="det-panel" id="det-mysql" role="tabpanel">
+          <div class="det-grid">
+            <div class="det-card"><span class="det-card-sev sev-critical">CRITICAL</span><div class="det-card-title">Replication Error</div><div class="det-card-desc">Slave/replica I/O or SQL thread errors — replication broken.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-critical">CRITICAL</span><div class="det-card-title">Table Corruption</div><div class="det-card-desc">Table marked as crashed — run REPAIR TABLE immediately.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-critical">CRITICAL</span><div class="det-card-title">InnoDB Fatal Error</div><div class="det-card-desc">InnoDB engine critical failure — may require innodb_force_recovery.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-critical">CRITICAL</span><div class="det-card-title">Disk Write Failure</div><div class="det-card-desc">MySQL can't write to disk — ENOSPC on the data directory.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-high">HIGH</span><div class="det-card-title">Connection Limit</div><div class="det-card-desc">Too many connections error — raise max_connections or fix pool.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-high">HIGH</span><div class="det-card-title">Slow Query Spike</div><div class="det-card-desc">≥50 slow queries in interval — missing indexes or full scans.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-medium">MEDIUM</span><div class="det-card-title">Aborted Connections</div><div class="det-card-desc">&gt;20 aborted connections — app connection pool misconfigured.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-medium">MEDIUM</span><div class="det-card-title">Full Table Scan</div><div class="det-card-desc">Query examined &gt;1 million rows — add index to fix.</div></div>
+          </div>
+        </div>
+
+        <div class="det-panel" id="det-app" role="tabpanel">
+          <div class="det-grid">
+            <div class="det-card"><span class="det-card-sev sev-critical">CRITICAL</span><div class="det-card-title">FATAL/CRITICAL Entries</div><div class="det-card-desc">[CRITICAL] or [FATAL] level entries in application log.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-critical">CRITICAL</span><div class="det-card-title">Custom Pattern Match</div><div class="det-card-desc">Your CRITICAL_PATTERNS regex matched — fully customizable.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-high">HIGH</span><div class="det-card-title">Exception Spike</div><div class="det-card-desc">≥30 exceptions in interval — application under significant stress.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-high">HIGH</span><div class="det-card-title">High Error Rate</div><div class="det-card-desc">ERROR entries ≥ 20% of total log lines in interval.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-high">HIGH</span><div class="det-card-title">DB Connection Errors</div><div class="det-card-desc">Database connection refused, deadlock, or pool exhaustion.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-high">HIGH</span><div class="det-card-title">Memory Exhaustion</div><div class="det-card-desc">OutOfMemoryError, heap space, GC overhead — JVM or Python issues.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-high">HIGH</span><div class="det-card-title">API Error Spike</div><div class="det-card-desc">&gt;20 API 4xx/5xx responses logged in the interval.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-medium">MEDIUM</span><div class="det-card-title">Timeout Spike</div><div class="det-card-desc">&gt;10 timeout events — downstream dependency degraded.</div></div>
+          </div>
+        </div>
+
+        <div class="det-panel" id="det-journal" role="tabpanel">
+          <div class="det-grid">
+            <div class="det-card"><span class="det-card-sev sev-critical">CRITICAL</span><div class="det-card-title">Kernel Error / Panic</div><div class="det-card-desc">Kernel-level error, Oops, or panic found in systemd journal.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-critical">CRITICAL</span><div class="det-card-title">OOM via Journal</div><div class="det-card-desc">OOM kill events from journald — catches systems using only journal.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-critical">CRITICAL</span><div class="det-card-title">Disk I/O Errors</div><div class="det-card-desc">Block device I/O errors, buffer I/O errors in journal.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-high">HIGH</span><div class="det-card-title">Core Dumps</div><div class="det-card-desc">systemd-coredump events — process crashed and dumped core.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-high">HIGH</span><div class="det-card-title">Journal Error Entries</div><div class="det-card-desc">err, crit, alert, or emerg priority journal entries in interval.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-high">HIGH</span><div class="det-card-title">Service Restart Loops</div><div class="det-card-desc">start-limit-hit: service crashing and being killed by systemd.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-high">HIGH</span><div class="det-card-title">SSH Failures via Journal</div><div class="det-card-desc">Catches systems where auth.log isn't used — reads sshd journal entries.</div></div>
+            <div class="det-card"><span class="det-card-sev sev-medium">MEDIUM</span><div class="det-card-title">SELinux / AVC Denials</div><div class="det-card-desc">Access vector cache denials — run audit2why to diagnose.</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── ALERTS ──────────────────────────────────────────── -->
+    <section class="section" id="alerts" aria-labelledby="alerts-heading">
+      <div class="section-inner">
+        <div class="section-label">Alert engine</div>
+        <h2 class="section-heading" id="alerts-heading">Four delivery channels</h2>
+        <p class="section-sub">Set <code style="font-family:var(--font-mono);color:var(--amber);font-size:13px;">ALERT_METHOD="email,slack"</code> for multi-channel. PagerDuty fires automatically on CRITICAL/HIGH if the key is set.</p>
+
+        <div class="alert-layout pre-reveal">
+          <!-- Email mock -->
+          <div class="alert-email-mock">
+            <div class="email-header-bar">
+              <div class="email-subject">[LogAlert][CRITICAL] 2 critical issues on server01</div>
+              <div class="email-meta">From: loganalyzer@server01 · To: ops@company.com · Just now</div>
+            </div>
+            <div class="email-body">
+              <div class="email-metric-row">
+                <div class="email-metric"><div class="email-metric-val" style="color:var(--red)">2</div><div class="email-metric-key">CRITICAL</div></div>
+                <div class="email-metric"><div class="email-metric-val">1</div><div class="email-metric-key">HIGH</div></div>
+                <div class="email-metric"><div class="email-metric-val" style="color:var(--indigo)">0</div><div class="email-metric-key">LOW</div></div>
+              </div>
+              <div class="email-row">
+                <span class="email-row-key" style="color:var(--red)">CRITICAL</span>
+                <span class="email-row-val">AUTH · Brute-force SSH from 203.0.113.5 — 12 failed logins in 15 min</span>
+              </div>
+              <div class="email-row">
+                <span class="email-row-key" style="color:var(--red)">CRITICAL</span>
+                <span class="email-row-val">THREATS · Persistent attacker — same IP in SSH + web scanner</span>
+              </div>
+              <div class="email-row">
+                <span class="email-row-key" style="color:var(--amber)">HIGH</span>
+                <span class="email-row-val">NGINX · 404 storm from 203.0.113.5 — 80 requests to /wp-admin*</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Channels -->
+          <div class="alert-channels">
+            <div class="alert-channel">
+              <div class="alert-channel-icon" style="background:var(--amber-soft)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              </div>
+              <div>
+                <div class="alert-channel-name">Email</div>
+                <div class="alert-channel-desc">HTML email via mailx or sendmail. Colour-coded findings table.</div>
+              </div>
+              <span class="alert-channel-status status-active">ACTIVE</span>
+            </div>
+            <div class="alert-channel">
+              <div class="alert-channel-icon" style="background:var(--indigo-soft)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--indigo)" aria-hidden="true"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg>
+              </div>
+              <div>
+                <div class="alert-channel-name">Slack</div>
+                <div class="alert-channel-desc">Incoming Webhook — top 5 findings per message, colour-coded.</div>
+              </div>
+              <span class="alert-channel-status status-config">CONFIGURE</span>
+            </div>
+            <div class="alert-channel">
+              <div class="alert-channel-icon" style="background:var(--indigo-soft)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--indigo-bright)" aria-hidden="true"><path d="M11.5 2.7L3 7.3v9.4l8.5 4.6 8.5-4.6V7.3L11.5 2.7zm0 1.6l6.7 3.7-6.7 3.7L4.8 8l6.7-3.7zM4 9.1l7 3.8v7.5L4 16.6V9.1zm8 11.3v-7.5l7-3.8v7.5L12 20.4z"/></svg>
+              </div>
+              <div>
+                <div class="alert-channel-name">Microsoft Teams</div>
+                <div class="alert-channel-desc">Incoming Webhook connector — MessageCard format, up to 8 findings.</div>
+              </div>
+              <span class="alert-channel-status status-config">CONFIGURE</span>
+            </div>
+            <div class="alert-channel">
+              <div class="alert-channel-icon" style="background:var(--red-soft)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--red)" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+              </div>
+              <div>
+                <div class="alert-channel-name">PagerDuty</div>
+                <div class="alert-channel-desc">Events API v2 — dedup key prevents alert storms. Fires on CRITICAL + HIGH.</div>
+              </div>
+              <span class="alert-channel-status status-crit">CRITICAL</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── THREAT CORRELATION ───────────────────────────────── -->
+    <section class="section" id="threats" aria-labelledby="threats-heading">
+      <div class="section-inner">
+        <div class="section-label">Cross-log intelligence</div>
+        <h2 class="section-heading" id="threats-heading">Threat correlation engine</h2>
+        <p class="section-sub"><code style="font-family:var(--font-mono);color:var(--amber);font-size:13px;">detect_threats.sh</code> runs after all modules and correlates their findings to catch attacks that no single module can see alone.</p>
+
+        <div class="threat-grid pre-reveal">
+          <div class="threat-card threat-critical">
+            <div class="threat-card-icon" style="background:var(--red-soft)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+            <div class="threat-card-title">Persistent Attacker</div>
+            <div class="threat-card-desc">Same IP appears in both SSH brute-force and nginx 404 storm — coordinated reconnaissance and intrusion attempt.</div>
+            <div class="threat-card-tags"><span class="threat-tag">AUTH</span><span class="threat-tag">NGINX</span></div>
+          </div>
+          <div class="threat-card threat-critical">
+            <div class="threat-card-icon" style="background:var(--red-soft)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+            <div class="threat-card-title">Multi-Service Failure</div>
+            <div class="threat-card-desc">CRITICAL or HIGH findings across 3 or more module categories simultaneously — likely intrusion or infrastructure cascade.</div>
+            <div class="threat-card-tags"><span class="threat-tag">AUTH</span><span class="threat-tag">NGINX</span><span class="threat-tag">SYSTEM</span></div>
+          </div>
+          <div class="threat-card threat-critical">
+            <div class="threat-card-icon" style="background:var(--red-soft)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+            <div class="threat-card-title">Application Overload</div>
+            <div class="threat-card-desc">OOM kill detected at the same time as app CRITICAL entries — memory leak, traffic storm, or runaway process.</div>
+            <div class="threat-card-tags"><span class="threat-tag">SYSTEM</span><span class="threat-tag">APP</span></div>
+          </div>
+          <div class="threat-card threat-critical">
+            <div class="threat-card-icon" style="background:var(--red-soft)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+            <div class="threat-card-title">Account Compromise</div>
+            <div class="threat-card-desc">Brute-force SSH followed by new user creation in the same interval — attacker may have gained access and created a backdoor account.</div>
+            <div class="threat-card-tags"><span class="threat-tag">AUTH brute</span><span class="threat-tag">AUTH new user</span></div>
+          </div>
+          <div class="threat-card threat-critical">
+            <div class="threat-card-icon" style="background:var(--red-soft)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" aria-hidden="true"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div>
+            <div class="threat-card-title">Data Integrity Risk</div>
+            <div class="threat-card-desc">Disk full and MySQL errors occurring together — database writes are failing and data loss may be imminent.</div>
+            <div class="threat-card-tags"><span class="threat-tag">SYSTEM</span><span class="threat-tag">MYSQL</span></div>
+          </div>
+          <div class="threat-card threat-high">
+            <div class="threat-card-icon" style="background:var(--amber-soft)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+            <div class="threat-card-title">Active Reconnaissance</div>
+            <div class="threat-card-desc">Web scanning and SSH brute-force in the same interval — target is being actively probed across multiple attack surfaces.</div>
+            <div class="threat-card-tags"><span class="threat-tag">NGINX</span><span class="threat-tag">AUTH</span></div>
+          </div>
+          <div class="threat-card threat-high">
+            <div class="threat-card-icon" style="background:var(--amber-soft)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+            <div class="threat-card-title">Cross-log IP Scan</div>
+            <div class="threat-card-desc">External IP appearing 10+ times across auth, nginx, and syslog combined — suspicious access pattern worth investigating.</div>
+            <div class="threat-card-tags"><span class="threat-tag">ALL LOGS</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SKILLS ──────────────────────────────────────────── -->
+    <section class="section" id="skills" aria-labelledby="skills-heading">
+      <div class="section-inner">
+        <div class="section-label">Technical depth</div>
+        <h2 class="section-heading" id="skills-heading">Core capabilities</h2>
+        <p class="section-sub">Built entirely in Bash 5 — no Python, no Ruby, no Node. Runs on any POSIX system with standard coreutils.</p>
+        <div class="skills-grid pre-reveal">
+          <div class="skill-item"><div class="skill-header"><span class="skill-name">Log position tracking</span><span class="skill-pct">100%</span></div><div class="skill-bar-bg"><div class="skill-bar-fill" style="--pct:1.0" data-pct="100"></div></div></div>
+          <div class="skill-item"><div class="skill-header"><span class="skill-name">Threat correlation</span><span class="skill-pct">95%</span></div><div class="skill-bar-bg"><div class="skill-bar-fill" data-pct="95"></div></div></div>
+          <div class="skill-item"><div class="skill-header"><span class="skill-name">Multi-channel alerts</span><span class="skill-pct">100%</span></div><div class="skill-bar-bg"><div class="skill-bar-fill" data-pct="100"></div></div></div>
+          <div class="skill-item"><div class="skill-header"><span class="skill-name">Pattern matching</span><span class="skill-pct">90%</span></div><div class="skill-bar-bg"><div class="skill-bar-fill" data-pct="90"></div></div></div>
+          <div class="skill-item"><div class="skill-header"><span class="skill-name">systemd integration</span><span class="skill-pct">95%</span></div><div class="skill-bar-bg"><div class="skill-bar-fill" data-pct="95"></div></div></div>
+          <div class="skill-item"><div class="skill-header"><span class="skill-name">SIEM JSON export</span><span class="skill-pct">90%</span></div><div class="skill-bar-bg"><div class="skill-bar-fill" data-pct="90"></div></div></div>
+          <div class="skill-item"><div class="skill-header"><span class="skill-name">Rate-limit / cooldown</span><span class="skill-pct">95%</span></div><div class="skill-bar-bg"><div class="skill-bar-fill" data-pct="95"></div></div></div>
+          <div class="skill-item"><div class="skill-header"><span class="skill-name">Test coverage</span><span class="skill-pct">63 tests</span></div><div class="skill-bar-bg"><div class="skill-bar-fill" data-pct="88"></div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PLAYGROUND ──────────────────────────────────────── -->
+    <section class="section" id="playground" aria-labelledby="pg-heading">
+      <div class="section-inner">
+        <div class="section-label">Interactive demo</div>
+        <h2 class="section-heading" id="pg-heading">Simulated analysis</h2>
+        <p class="section-sub">Select a scenario and run a simulated analysis to see what the output looks like in a real terminal.</p>
+
+        <div class="playground-layout pre-reveal">
+          <div class="pg-controls">
+            <div>
+              <div class="pg-label">Scenario</div>
+              <div class="pg-scenario-chips" id="pg-scenarios">
+                <button class="pg-chip active" data-scenario="bruteforce">SSH Brute-force Attack</button>
+                <button class="pg-chip" data-scenario="oom">Kernel OOM Kill</button>
+                <button class="pg-chip" data-scenario="scanner">Web Scanner Detected</button>
+                <button class="pg-chip" data-scenario="replication">MySQL Replication Error</button>
+                <button class="pg-chip" data-scenario="threat">Coordinated Attack</button>
+                <button class="pg-chip" data-scenario="allclear">All Clear — Clean Run</button>
+              </div>
+            </div>
+            <button class="pg-run-btn" id="pg-run-btn">▶ RUN ANALYSIS</button>
+          </div>
+
+          <div class="pg-terminal">
+            <div class="pg-titlebar">
+              <div class="pg-titlebar-left">
+                <div class="term-dots" aria-hidden="true">
+                  <span class="term-dot term-dot-r"></span>
+                  <span class="term-dot term-dot-y"></span>
+                  <span class="term-dot term-dot-g"></span>
+                </div>
+                <span class="term-title" style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);">log_analyzer.sh — playground</span>
+              </div>
+              <span class="pg-status-badge pg-status-idle" id="pg-status">IDLE</span>
+            </div>
+            <div class="pg-body" id="pg-body" aria-live="polite" aria-label="Playground terminal output">
+              <span style="color:var(--text-muted);">Select a scenario and press RUN ANALYSIS.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ═══════════════════════ FOOTER ═══════════════════════ -->
+  <footer id="site-footer" role="contentinfo">
+    <div class="footer-inner">
+      <span class="footer-brand">LOG<span>·</span>ANALYZER</span>
+      <nav class="footer-links" aria-label="Footer links">
+        <a class="footer-link" href="https://github.com/samiulAsumel/log-analyzer-alert" target="_blank" rel="noopener">GitHub</a>
+        <a class="footer-link" href="https://github.com/samiulAsumel/log-analyzer-alert/blob/main/README.md" target="_blank" rel="noopener">Docs</a>
+        <a class="footer-link" href="https://github.com/samiulAsumel/log-analyzer-alert/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Changelog</a>
+        <a class="footer-link" href="https://github.com/samiulAsumel/log-analyzer-alert/issues" target="_blank" rel="noopener">Issues</a>
+      </nav>
+      <span class="footer-copy">v2.0.0 · Pure Bash · RHEL 9 / Ubuntu 22.04+</span>
+    </div>
+  </footer>
+
+  <script src="scripts-data.js"></script>
+  <script>
+  (() => {
+    'use strict';
+
+    // ── Scroll progress bar ────────────────────────────────────
+    const progressBar = document.getElementById('progress-bar');
+    const header = document.getElementById('site-header');
+    window.addEventListener('scroll', () => {
+      const h = document.documentElement;
+      const pct = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100;
+      progressBar.style.width = pct + '%';
+      header.classList.toggle('scrolled', h.scrollTop > 20);
+
+      // Active nav link
+      const sections = ['hero','install','architecture','scripts','detections','alerts','threats','skills','playground'];
+      let current = 'hero';
+      for (const id of sections) {
+        const el = document.getElementById(id);
+        if (el && el.getBoundingClientRect().top < 120) current = id;
+      }
+      document.querySelectorAll('.nav-link').forEach(l => {
+        l.classList.toggle('active', l.getAttribute('href') === '#' + current);
+      });
+    }, { passive: true });
+
+    // ── Mobile nav ─────────────────────────────────────────────
+    const hamburger = document.querySelector('.hamburger');
+    const mobileNav = document.getElementById('mobile-nav');
+    hamburger.addEventListener('click', () => {
+      const open = hamburger.getAttribute('aria-expanded') === 'true';
+      hamburger.setAttribute('aria-expanded', String(!open));
+      mobileNav.classList.toggle('open', !open);
+    });
+    document.querySelectorAll('.mnav-link').forEach(l => {
+      l.addEventListener('click', () => {
+        hamburger.setAttribute('aria-expanded', 'false');
+        mobileNav.classList.remove('open');
+      });
+    });
+
+    // ── Copy buttons ───────────────────────────────────────────
+    document.querySelectorAll('.copy-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const text = btn.dataset.copy || btn.closest('.install-cmd')?.querySelector('code')?.textContent || '';
+        navigator.clipboard.writeText(text).then(() => {
+          const orig = btn.textContent;
+          btn.textContent = 'COPIED!';
+          btn.style.color = 'var(--emerald)';
+          setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 1600);
+        });
+      });
+    });
+
+    // ── Scroll reveal ──────────────────────────────────────────
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('revealed'); observer.unobserve(e.target); } });
+    }, { threshold: 0.08 });
+    document.querySelectorAll('.pre-reveal').forEach(el => observer.observe(el));
+
+    // ── Pipeline animation ─────────────────────────────────────
+    const pipelineObs = new IntersectionObserver(entries => {
+      if (!entries[0].isIntersecting) return;
+      pipelineObs.disconnect();
+      const nodes = document.querySelectorAll('[id^="pnode-"]');
+      const fill = document.getElementById('pipeline-fill');
+      let i = 0;
+      const interval = setInterval(() => {
+        if (i < nodes.length) {
+          nodes[i].classList.add('lit');
+          if (fill && i > 0) {
+            const first = nodes[0].getBoundingClientRect();
+            const last = nodes[i].getBoundingClientRect();
+            fill.style.width = (last.left - first.left + last.width / 2) + 'px';
+          }
+          i++;
+        } else clearInterval(interval);
+      }, 180);
+    }, { threshold: 0.3 });
+    const ptrack = document.querySelector('.pipeline-track');
+    if (ptrack) pipelineObs.observe(ptrack);
+
+    // ── Skill bars ─────────────────────────────────────────────
+    const skillObs = new IntersectionObserver(entries => {
+      if (!entries[0].isIntersecting) return;
+      skillObs.disconnect();
+      document.querySelectorAll('.skill-bar-fill').forEach(bar => {
+        const pct = parseInt(bar.dataset.pct || 80, 10);
+        bar.style.transform = `scaleX(${pct / 100})`;
+      });
+    }, { threshold: 0.2 });
+    const sg = document.querySelector('.skills-grid');
+    if (sg) skillObs.observe(sg);
+
+    // ── Hero terminal ──────────────────────────────────────────
+    const heroTerm = document.getElementById('hero-terminal');
+    const HERO_LINES = [
+      { cls: 'tline-dim',  text: '╔══════════════════════════════════════════╗' },
+      { cls: 'tline-warn', text: '║  Automated Log Analyzer & Alert System   ║' },
+      { cls: 'tline-warn', text: '║  v2.0.0 · Run 20260528_140000            ║' },
+      { cls: 'tline-dim',  text: '╚══════════════════════════════════════════╝' },
+      { cls: 'tline-plain', text: '' },
+      { cls: 'tline-info', text: '[2026-05-28 14:00:01] [LOCK] Acquired lock (PID 4821)' },
+      { cls: 'tline-info', text: '[2026-05-28 14:00:01] [ORCHESTRATOR] ▶  Module: auth' },
+      { cls: 'tline-info', text: '[2026-05-28 14:00:01] [POSITION] Reading 4,280 new bytes from /var/log/secure' },
+      { cls: 'tline-err',  text: '[2026-05-28 14:00:01] [CRITICAL] [AUTH] Brute-force SSH from 203.0.113.5 — 12 failed logins' },
+      { cls: 'tline-err',  text: '[2026-05-28 14:00:01] [CRITICAL] [AUTH] Root SSH login detected — 1 login from 203.0.113.5' },
+      { cls: 'tline-ok',   text: '[2026-05-28 14:00:01] [ORCHESTRATOR] ✔  Module done: auth' },
+      { cls: 'tline-info', text: '[2026-05-28 14:00:02] [ORCHESTRATOR] ▶  Module: system' },
+      { cls: 'tline-ok',   text: '[2026-05-28 14:00:02] [POSITION] No new data in /var/log/messages' },
+      { cls: 'tline-ok',   text: '[2026-05-28 14:00:02] [ORCHESTRATOR] ✔  Module done: system' },
+      { cls: 'tline-info', text: '[2026-05-28 14:00:02] [ORCHESTRATOR] ▶  Module: nginx' },
+      { cls: 'tline-warn', text: '[2026-05-28 14:00:02] [HIGH] [NGINX] 404 storm / directory scanner: 203.0.113.5 — 87 404s' },
+      { cls: 'tline-ok',   text: '[2026-05-28 14:00:02] [ORCHESTRATOR] ✔  Module done: nginx' },
+      { cls: 'tline-info', text: '[2026-05-28 14:00:03] [ORCHESTRATOR] ▶  Module: threats' },
+      { cls: 'tline-crit', text: '[2026-05-28 14:00:03] [CRITICAL] [THREATS] Persistent attacker: 203.0.113.5 — coordinated attack' },
+      { cls: 'tline-ok',   text: '[2026-05-28 14:00:03] [ORCHESTRATOR] ✔  Module done: threats' },
+      { cls: 'tline-plain', text: '' },
+      { cls: 'tline-info', text: '[2026-05-28 14:00:03] [ORCHESTRATOR] Findings: CRITICAL:3 HIGH:1 MEDIUM:0 LOW:0' },
+      { cls: 'tline-ok',   text: '[2026-05-28 14:00:03] [ALERT] CRITICAL alert dispatched via Email + Slack + PagerDuty' },
+      { cls: 'tline-ok',   text: '[2026-05-28 14:00:03] [ORCHESTRATOR] Run 20260528_140000 complete in 2s' },
+      { cls: 'tline-plain', text: '' },
+    ];
+    let lineIndex = 0;
+    const heroObs = new IntersectionObserver(entries => {
+      if (!entries[0].isIntersecting || lineIndex > 0) return;
+      heroObs.disconnect();
+      const tick = () => {
+        if (lineIndex >= HERO_LINES.length) {
+          const cursor = document.createElement('span');
+          cursor.className = 'term-cursor';
+          cursor.setAttribute('aria-hidden', 'true');
+          heroTerm.appendChild(cursor);
+          return;
+        }
+        const { cls, text } = HERO_LINES[lineIndex++];
+        const div = document.createElement('div');
+        div.className = cls;
+        div.textContent = text || '​';
+        heroTerm.appendChild(div);
+        heroTerm.scrollTop = heroTerm.scrollHeight;
+        setTimeout(tick, text ? 55 : 20);
+      };
+      setTimeout(tick, 400);
+    }, { threshold: 0.1 });
+    if (heroTerm) heroObs.observe(heroTerm);
+
+    // ── Scripts explorer ───────────────────────────────────────
+    const navList = document.getElementById('script-nav-list');
+    const content = document.getElementById('scripts-content');
+    const search  = document.getElementById('scripts-search');
+
+    const BADGE_CLASS = { bash:'badge-bash', module:'badge-mod', cron:'badge-cron', root:'badge-root', tests:'badge-tests', config:'badge-bash' };
+    const BADGE_LABEL = { bash:'bash', module:'module', cron:'cron', root:'root', tests:'tests', config:'config' };
+
+    let currentId = null;
+
+    function renderNav(filter = '') {
+      navList.innerHTML = '';
+      const fl = filter.toLowerCase();
+      SCRIPTS_DATA.forEach(s => {
+        if (fl && !s.name.toLowerCase().includes(fl) && !s.description.toLowerCase().includes(fl)) return;
+        const li = document.createElement('li');
+        li.setAttribute('role', 'option');
+        li.setAttribute('aria-selected', s.id === currentId ? 'true' : 'false');
+        const btn = document.createElement('button');
+        btn.className = 'script-nav-btn' + (s.id === currentId ? ' active' : '');
+        btn.setAttribute('data-id', s.id);
+        btn.setAttribute('aria-label', `View ${s.name}`);
+        btn.innerHTML = `<span class="script-nav-icon" aria-hidden="true">›</span>${s.name}`;
+        btn.addEventListener('click', () => showScript(s.id));
+        li.appendChild(btn);
+        navList.appendChild(li);
+      });
+    }
+
+    function showScript(id) {
+      const s = SCRIPTS_DATA.find(x => x.id === id);
+      if (!s) return;
+      currentId = id;
+      renderNav(search.value);
+      const badges = (s.badges || []).map(b =>
+        `<span class="script-badge ${BADGE_CLASS[b] || 'badge-bash'}">${BADGE_LABEL[b] || b}</span>`
+      ).join('');
+      const escaped = s.code.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      content.innerHTML = `
+        <div class="script-header">
+          <span class="script-title">${s.name}</span>
+          <div class="script-badges">${badges}</div>
+        </div>
+        <p class="script-desc">${s.description}</p>
+        <div class="script-code-wrap">
+          <button class="script-code-copy" aria-label="Copy code">COPY</button>
+          <pre><code>${escaped}</code></pre>
+        </div>`;
+      content.querySelector('.script-code-copy').addEventListener('click', function() {
+        navigator.clipboard.writeText(s.code).then(() => {
+          this.textContent = 'COPIED!';
+          this.style.color = 'var(--emerald)';
+          setTimeout(() => { this.textContent = 'COPY'; this.style.color = ''; }, 1600);
+        });
+      });
+    }
+
+    search.addEventListener('input', () => renderNav(search.value));
+    renderNav();
+
+    // Auto-show first script
+    if (SCRIPTS_DATA.length > 0) setTimeout(() => showScript(SCRIPTS_DATA[0].id), 100);
+
+    // ── Detection tabs ─────────────────────────────────────────
+    document.querySelectorAll('.det-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.det-tab').forEach(t => { t.classList.remove('active'); t.setAttribute('aria-selected','false'); });
+        document.querySelectorAll('.det-panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        tab.setAttribute('aria-selected','true');
+        const panel = document.getElementById(tab.dataset.panel);
+        if (panel) panel.classList.add('active');
+      });
+    });
+
+    // ── Playground ─────────────────────────────────────────────
+    const pgBody    = document.getElementById('pg-body');
+    const pgStatus  = document.getElementById('pg-status');
+    const pgRunBtn  = document.getElementById('pg-run-btn');
+    const pgChips   = document.querySelectorAll('.pg-chip');
+    let pgRunning   = false;
+    let selectedScenario = 'bruteforce';
+
+    pgChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        pgChips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        selectedScenario = chip.dataset.scenario;
+      });
+    });
+
+    const SCENARIOS = {
+      bruteforce: [
+        { cls:'tline-info',  t:0,   text:'[14:00:01] [ORCHESTRATOR] Run 20260528_140001 started on server01' },
+        { cls:'tline-info',  t:80,  text:'[14:00:01] [ORCHESTRATOR] ▶  Module: auth' },
+        { cls:'tline-info',  t:160, text:'[14:00:01] [POSITION] Reading 6,240 new bytes from /var/log/secure' },
+        { cls:'tline-err',   t:240, text:'[14:00:01] [CRITICAL] [AUTH] Brute-force SSH from 198.51.100.7 — 18 failed logins in 15 min' },
+        { cls:'tline-warn',  t:320, text:'[14:00:01] [HIGH] [AUTH] Repeated SSH failures from 45.33.32.156 — 4 attempts' },
+        { cls:'tline-err',   t:400, text:'[14:00:01] [CRITICAL] [AUTH] Root SSH login detected — 1 login from 198.51.100.7' },
+        { cls:'tline-ok',    t:480, text:'[14:00:01] [ORCHESTRATOR] ✔  Module done: auth' },
+        { cls:'tline-info',  t:560, text:'[14:00:02] [ORCHESTRATOR] ▶  Module: threats' },
+        { cls:'tline-info',  t:640, text:'[14:00:02] [POSITION] Reading 1,100 bytes from /var/log/nginx/access.log' },
+        { cls:'tline-err',   t:720, text:'[14:00:02] [CRITICAL] [THREATS] Persistent attacker: 198.51.100.7 — SSH brute-force AND web scanner' },
+        { cls:'tline-ok',    t:800, text:'[14:00:02] [ORCHESTRATOR] ✔  Module done: threats' },
+        { cls:'tline-info',  t:900, text:'[14:00:02] [ORCHESTRATOR] Findings — CRITICAL:3 HIGH:1 MEDIUM:0 LOW:0' },
+        { cls:'tline-ok',    t:980, text:'[14:00:02] [ALERT] Email dispatched → ops@company.com' },
+        { cls:'tline-ok',    t:1060,text:'[14:00:02] [ALERT] PagerDuty event triggered (severity: critical)' },
+        { cls:'tline-ok',    t:1140,text:'[14:00:02] [ORCHESTRATOR] Run complete in 1s' },
+      ],
+      oom: [
+        { cls:'tline-info',  t:0,   text:'[14:00:01] [ORCHESTRATOR] ▶  Module: system' },
+        { cls:'tline-info',  t:80,  text:'[14:00:01] [POSITION] Reading 12,400 new bytes from /var/log/messages' },
+        { cls:'tline-err',   t:160, text:'[14:00:01] [CRITICAL] [SYSTEM] Out-of-Memory kill — 2 OOM event(s) — process 8812 (java)' },
+        { cls:'tline-ok',    t:240, text:'[14:00:01] [ORCHESTRATOR] ✔  Module done: system' },
+        { cls:'tline-info',  t:320, text:'[14:00:01] [ORCHESTRATOR] ▶  Module: app' },
+        { cls:'tline-err',   t:400, text:'[14:00:01] [CRITICAL] [APP] myapp: CRITICAL/FATAL entries — OutOfMemoryError: Java heap space' },
+        { cls:'tline-ok',    t:480, text:'[14:00:01] [ORCHESTRATOR] ✔  Module done: app' },
+        { cls:'tline-info',  t:560, text:'[14:00:01] [ORCHESTRATOR] ▶  Module: threats' },
+        { cls:'tline-err',   t:640, text:'[14:00:01] [CRITICAL] [THREATS] Application overload: OOM + App crash simultaneously' },
+        { cls:'tline-ok',    t:720, text:'[14:00:01] [ORCHESTRATOR] Findings — CRITICAL:3 HIGH:0 MEDIUM:0 LOW:0' },
+        { cls:'tline-ok',    t:800, text:'[14:00:01] [ALERT] CRITICAL alert dispatched via Email + Slack' },
+        { cls:'tline-ok',    t:880, text:'[14:00:01] [ORCHESTRATOR] Run complete in 1s' },
+      ],
+      scanner: [
+        { cls:'tline-info',  t:0,   text:'[14:00:01] [ORCHESTRATOR] ▶  Module: nginx' },
+        { cls:'tline-info',  t:80,  text:'[14:00:01] [POSITION] Reading 89,200 new bytes from /var/log/nginx/access.log' },
+        { cls:'tline-info',  t:160, text:'[14:00:01] [NGINX] Analyzing 1,240 new access log line(s)' },
+        { cls:'tline-warn',  t:240, text:'[14:00:01] [HIGH] [NGINX] 404 storm / directory scanner: 192.0.2.100 — 320 404s' },
+        { cls:'tline-warn',  t:320, text:'[14:00:01] [HIGH] [NGINX] Suspicious scanner user-agent — 47 requests with sqlmap/1.7' },
+        { cls:'tline-err',   t:400, text:'[14:00:01] [CRITICAL] [NGINX] 5xx error spike — 38 errors in 15 min (threshold: 20)' },
+        { cls:'tline-ok',    t:480, text:'[14:00:01] [ORCHESTRATOR] ✔  Module done: nginx' },
+        { cls:'tline-info',  t:560, text:'[14:00:01] [ORCHESTRATOR] Findings — CRITICAL:1 HIGH:2 MEDIUM:0 LOW:0' },
+        { cls:'tline-ok',    t:640, text:'[14:00:01] [ALERT] CRITICAL alert dispatched → ops@company.com' },
+        { cls:'tline-ok',    t:720, text:'[14:00:01] [ALERT] Teams message sent' },
+        { cls:'tline-ok',    t:800, text:'[14:00:01] [ORCHESTRATOR] Run complete in 1s' },
+      ],
+      replication: [
+        { cls:'tline-info',  t:0,   text:'[14:00:01] [ORCHESTRATOR] ▶  Module: mysql' },
+        { cls:'tline-info',  t:80,  text:'[14:00:01] [POSITION] Reading 2,840 new bytes from /var/log/mysql/error.log' },
+        { cls:'tline-err',   t:160, text:'[14:00:01] [CRITICAL] [MYSQL] MySQL replication error — Got fatal error 1236 from master' },
+        { cls:'tline-err',   t:240, text:'[14:00:01] [CRITICAL] [MYSQL] InnoDB fatal error — table corruption on prod.orders' },
+        { cls:'tline-warn',  t:320, text:'[14:00:01] [HIGH] [MYSQL] MySQL connection limit hit — Too many connections (×12)' },
+        { cls:'tline-ok',    t:400, text:'[14:00:01] [ORCHESTRATOR] ✔  Module done: mysql' },
+        { cls:'tline-info',  t:480, text:'[14:00:01] [ORCHESTRATOR] Findings — CRITICAL:2 HIGH:1 MEDIUM:0 LOW:0' },
+        { cls:'tline-ok',    t:560, text:'[14:00:01] [ALERT] CRITICAL alert dispatched (2 finding(s))' },
+        { cls:'tline-ok',    t:640, text:'[14:00:01] [ORCHESTRATOR] Run complete in 1s' },
+      ],
+      threat: [
+        { cls:'tline-info',  t:0,   text:'[14:00:01] [ORCHESTRATOR] Running all modules…' },
+        { cls:'tline-err',   t:80,  text:'[14:00:01] [CRITICAL] [AUTH] Brute-force SSH from 203.0.113.9 — 22 failed logins' },
+        { cls:'tline-err',   t:160, text:'[14:00:01] [CRITICAL] [AUTH] New user created after brute-force: name=backdoor' },
+        { cls:'tline-warn',  t:240, text:'[14:00:01] [HIGH] [NGINX] 404 storm from 203.0.113.9 — 180 404s on /wp-admin' },
+        { cls:'tline-warn',  t:320, text:'[14:00:01] [HIGH] [SYSTEM] Service failure — nginx.service entered failed state' },
+        { cls:'tline-err',   t:400, text:'[14:00:02] [CRITICAL] [THREATS] Persistent attacker: 203.0.113.9 — SSH brute-force AND web scanner' },
+        { cls:'tline-err',   t:480, text:'[14:00:02] [CRITICAL] [THREATS] Account compromise: brute-force + new user in same interval' },
+        { cls:'tline-err',   t:560, text:'[14:00:02] [CRITICAL] [THREATS] Multi-service failure — AUTH + NGINX + SYSTEM simultaneously' },
+        { cls:'tline-info',  t:640, text:'[14:00:02] [THREATS] Composite threat score: 18 → level: CRITICAL' },
+        { cls:'tline-info',  t:720, text:'[14:00:02] [ORCHESTRATOR] Findings — CRITICAL:5 HIGH:2 MEDIUM:0 LOW:0' },
+        { cls:'tline-ok',    t:800, text:'[14:00:02] [ALERT] CRITICAL alert dispatched via Email + Slack + PagerDuty' },
+        { cls:'tline-ok',    t:880, text:'[14:00:02] [ORCHESTRATOR] Run complete in 2s' },
+      ],
+      allclear: [
+        { cls:'tline-info',  t:0,   text:'[14:00:01] [ORCHESTRATOR] Run 20260528_140001 started on server01' },
+        { cls:'tline-info',  t:80,  text:'[14:00:01] [ORCHESTRATOR] ▶  Module: auth' },
+        { cls:'tline-ok',    t:160, text:'[14:00:01] [POSITION] No new data in /var/log/secure' },
+        { cls:'tline-ok',    t:240, text:'[14:00:01] [ORCHESTRATOR] ✔  Module done: auth' },
+        { cls:'tline-info',  t:320, text:'[14:00:01] [ORCHESTRATOR] ▶  Module: system' },
+        { cls:'tline-ok',    t:400, text:'[14:00:01] [POSITION] No new data in /var/log/messages' },
+        { cls:'tline-ok',    t:480, text:'[14:00:01] [ORCHESTRATOR] ✔  Module done: system' },
+        { cls:'tline-info',  t:560, text:'[14:00:01] [ORCHESTRATOR] ▶  Module: nginx' },
+        { cls:'tline-ok',    t:640, text:'[14:00:01] [POSITION] No new data in /var/log/nginx/access.log' },
+        { cls:'tline-ok',    t:720, text:'[14:00:01] [ORCHESTRATOR] ✔  Module done: nginx' },
+        { cls:'tline-info',  t:800, text:'[14:00:01] [ORCHESTRATOR] ▶  Module: threats' },
+        { cls:'tline-ok',    t:880, text:'[14:00:01] [THREATS] No findings to correlate' },
+        { cls:'tline-ok',    t:960, text:'[14:00:01] [THREATS] No correlated threats detected' },
+        { cls:'tline-ok',    t:1040,text:'[14:00:01] [ORCHESTRATOR] Findings — CRITICAL:0 HIGH:0 MEDIUM:0 LOW:0' },
+        { cls:'tline-ok',    t:1120,text:'[14:00:01] [ORCHESTRATOR] Run 20260528_140001 complete in 1s ✓ Clean' },
+      ],
+    };
+
+    pgRunBtn.addEventListener('click', () => {
+      if (pgRunning) return;
+      pgRunning = true;
+      pgRunBtn.disabled = true;
+      pgBody.innerHTML = '';
+      pgStatus.className = 'pg-status-badge pg-status-running';
+      pgStatus.textContent = 'RUNNING';
+
+      const lines = SCENARIOS[selectedScenario] || SCENARIOS.bruteforce;
+      const hasCrit = lines.some(l => l.cls === 'tline-crit' || l.cls === 'tline-err');
+
+      lines.forEach(({ cls, text, t }) => {
+        setTimeout(() => {
+          const div = document.createElement('div');
+          div.className = cls;
+          div.textContent = text;
+          pgBody.appendChild(div);
+          pgBody.scrollTop = pgBody.scrollHeight;
+        }, t);
+      });
+
+      const lastT = lines[lines.length - 1].t + 200;
+      setTimeout(() => {
+        pgStatus.className = 'pg-status-badge ' + (hasCrit ? 'pg-status-failed' : 'pg-status-ok');
+        pgStatus.textContent = hasCrit ? 'ALERTS SENT' : 'CLEAN';
+        pgRunning = false;
+        pgRunBtn.disabled = false;
+      }, lastT);
+    });
+
+  })();
+  </script>
+</body>
+</html>
