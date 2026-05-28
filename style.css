@@ -437,7 +437,7 @@ code, pre, .mono { font-family: var(--font-mono); }
   transition: color 0.2s, background 0.2s;
 }
 .script-code-copy:hover { color: var(--amber); background: var(--amber-soft); }
-.script-code-wrap pre { overflow-x: auto; max-height: 360px; padding: 14px; margin: 0; }
+.script-code-wrap pre { padding: 14px; margin: 0; }
 .script-code-wrap pre code { font-size: 11.5px; line-height: 1.6; font-family: var(--font-mono); }
 
 /* ── Detection tabs (module sections) ────────────────────────────────────── */
