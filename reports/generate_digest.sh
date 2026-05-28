@@ -299,7 +299,8 @@ main() {
         return 0
     fi
 
-    local subject="[LogDigest] $(date '+%Y-%m-%d') — ${total} finding(s) on $(hostname -s)"
+    local subject
+    subject="[LogDigest] $(date '+%Y-%m-%d') — ${total} finding(s) on $(hostname -s)"
     [[ -z "${ALERT_EMAIL:-}" ]] && { log_d "ALERT_EMAIL not set — digest not sent"; return 0; }
 
     if command -v mailx &>/dev/null; then

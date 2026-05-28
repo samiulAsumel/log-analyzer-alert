@@ -38,7 +38,8 @@ for _mod in alert_engine analyze_auth analyze_system analyze_nginx \
 done
 
 # Optional modules sourced only if present
-for _opt_mod in analyze_journal; do
+_opt_modules=(analyze_journal)
+for _opt_mod in "${_opt_modules[@]}"; do
     _opt_path="${SCRIPT_DIR}/modules/${_opt_mod}.sh"
     # shellcheck disable=SC1090
     [[ -f "$_opt_path" ]] && source "$_opt_path"

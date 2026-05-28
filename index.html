@@ -594,6 +594,24 @@
   (() => {
     'use strict';
 
+    // ── Clipboard helper (HTTPS + HTTP/file fallback) ──────────
+    function copyText(text, onDone) {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(onDone).catch(() => _legacyCopy(text, onDone));
+      } else {
+        _legacyCopy(text, onDone);
+      }
+    }
+    function _legacyCopy(text, onDone) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      try { document.execCommand('copy'); onDone(); } catch (_) {}
+      document.body.removeChild(ta);
+    }
+
     // ── Scroll progress bar ────────────────────────────────────
     const progressBar = document.getElementById('progress-bar');
     const header = document.getElementById('site-header');
@@ -634,7 +652,7 @@
     document.querySelectorAll('.copy-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const text = btn.dataset.copy || btn.closest('.install-cmd')?.querySelector('code')?.textContent || '';
-        navigator.clipboard.writeText(text).then(() => {
+        copyText(text, () => {
           const orig = btn.textContent;
           btn.textContent = 'COPIED!';
           btn.style.color = 'var(--emerald)';
@@ -785,10 +803,11 @@
           <pre><code>${escaped}</code></pre>
         </div>`;
       content.querySelector('.script-code-copy').addEventListener('click', function() {
-        navigator.clipboard.writeText(s.code).then(() => {
-          this.textContent = 'COPIED!';
-          this.style.color = 'var(--emerald)';
-          setTimeout(() => { this.textContent = 'COPY'; this.style.color = ''; }, 1600);
+        const self = this;
+        copyText(s.code, () => {
+          self.textContent = 'COPIED!';
+          self.style.color = 'var(--emerald)';
+          setTimeout(() => { self.textContent = 'COPY'; self.style.color = ''; }, 1600);
         });
       });
     }

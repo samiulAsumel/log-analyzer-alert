@@ -112,7 +112,8 @@ _build_slack_payload() {
         *)        emoji=":blue_circle:";  colour="good"    ;;
     esac
 
-    local text="${emoji} *${subject}* on \`$(hostname -s 2>/dev/null)\`\n"
+    local text
+    text="${emoji} *${subject}* on \`$(hostname -s 2>/dev/null)\`\n"
     local fields=""
     for f in "${findings[@]:0:5}"; do   # Slack limits; cap at 5
         IFS='|' read -r sev mod title detail <<< "$f"
@@ -249,7 +250,8 @@ _send_alert() {
         else
             local html
             html=$(_build_email_html "$subject" "$severity" "${findings[@]}")
-            local full_subject="[LogAlert][${severity^^}] ${subject} @ $(hostname -s)"
+            local full_subject
+            full_subject="[LogAlert][${severity^^}] ${subject} @ $(hostname -s)"
 
             if command -v mailx &>/dev/null; then
                 echo "$html" | mailx -a "Content-Type: text/html" \
@@ -330,7 +332,8 @@ _send_critical_alert() {
     [[ ${#critical_findings[@]} -eq 0 ]] && return 0
 
     # CRITICAL always bypasses rate-limit
-    local subject="CRITICAL: ${CRITICAL_COUNT} critical issue(s) detected on $(hostname -s)"
+    local subject
+    subject="CRITICAL: ${CRITICAL_COUNT} critical issue(s) detected on $(hostname -s)"
     _send_alert "CRITICAL" "$subject" "${critical_findings[@]}"
     log "OK" "ALERT" "CRITICAL alert dispatched (${CRITICAL_COUNT} finding(s))"
 }
@@ -342,10 +345,12 @@ _send_high_alert() {
     done
     [[ ${#high_findings[@]} -eq 0 ]] && return 0
 
-    local key="HIGH_$(date '+%Y%m%d')"
+    local key
+    key="HIGH_$(date '+%Y%m%d')"
     _alert_allowed "$key" "${HIGH_ALERT_COOLDOWN:-30}" || return 0
 
-    local subject="HIGH: ${HIGH_COUNT} high-severity issue(s) detected on $(hostname -s)"
+    local subject
+    subject="HIGH: ${HIGH_COUNT} high-severity issue(s) detected on $(hostname -s)"
     _send_alert "HIGH" "$subject" "${high_findings[@]}"
     log "OK" "ALERT" "HIGH alert dispatched (${HIGH_COUNT} finding(s))"
 }
